@@ -207,7 +207,7 @@ nav button.on{background:var(--ac);border-color:var(--ac);color:#fff;font-weight
 <div id="app"></div>
 <script>
 const ICSI=['Nguyễn Khắc Sinh','Nguyễn Văn Long','Đỗ Thị Kim Chi'];
-let cases={},role=ls('role'),tab='tach',col=null,sync=false,tinp={},imp=null,ord=null,warn=null,seen=new Set(),themeI=+(ls('theme')||0),bgI=+(ls('bg')||0),srt=ls('srt')||'time',early=null,fin=null;
+var pend=false;let cases={},role=ls('role'),tab='tach',col=null,sync=false,tinp={},imp=null,ord=null,warn=null,seen=new Set(),themeI=+(ls('theme')||0),bgI=+(ls('bg')||0),srt=ls('srt')||'time',early=null,fin=null;
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){return null}}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hm=m=>{m=((Math.round(m)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
@@ -234,13 +234,28 @@ applyBg(bgI);
 var thOpen=false;
 const THP=()=>`<div class="thp"><div class="sub">Màu nhấn</div><div>${TH.map((t,i)=>`<button class="sw${themeI===i?' on':''}" style="background:${t[2]}" title="${t[0]}" data-a="theme" data-v="${i}"></button>`).join('')}</div><div class="sub">Nền</div><div>${BG.map((t,i)=>`<button class="sw bg${bgI===i?' on':''}" style="background:${t[1]}" title="${t[0]}" data-a="bg" data-v="${i}"></button>`).join('')}</div></div>`;
 const ready=c=>c.done?hm(pm(c.done)+(c.incub?30:0)):null;
-const LK='icsi_cases_v1';function lsave(){ls(LK,JSON.stringify(cases))}
-function save(id,p){cases[id]={...cases[id],...p};render();if(col)col.doc(id).set(cases[id]).catch(()=>{});else lsave()}
-function saveQ(id,p){cases[id]={...cases[id],...p};if(col)col.doc(id).set(cases[id]).catch(()=>{});else lsave()}
-function del(id){delete cases[id];render();if(col)col.doc(id).delete().catch(()=>{});else lsave()}
-(async()=>{try{const db=window.claude&&await claude.use('db');if(!db){lmode();return}col=db.collection('cases');
-col.onSnapshot(s=>{cases={};s.docs.forEach(d=>cases[d.id]=d.data());if(!ord||!ord.length)resort();sync=true;render()},()=>{sync=false})}catch(e){lmode()}})();
-function lmode(){try{cases=JSON.parse(ls(LK)||'{}')||{}}catch(e){cases={}}if(!ord||!ord.length)resort();render();window.addEventListener('storage',e=>{if(e.key===LK){try{cases=JSON.parse(e.newValue||'{}')||{}}catch(x){}render()}})}
+const LK='icsi_cases_v1';let LAST='',BC=null;function lsave(){LAST=JSON.stringify(cases);ls(LK,LAST);try{BC&&BC.postMessage(1)}catch(e){}}
+function lsync(){const v=ls(LK)||'{}';if(v===LAST)return;LAST=v;try{cases=JSON.parse(v)||{}}catch(e){return}render()}
+function save(id,p){cases[id]={...cases[id],...p};render();if(col)col.doc(id).set(cases[id]).catch(()=>{});else if(RT)rtw(id,p);else lsave()}
+function saveQ(id,p){cases[id]={...cases[id],...p};if(col)col.doc(id).set(cases[id]).catch(()=>{});else if(RT)rtw(id,p);else lsave()}
+function del(id){delete cases[id];render();if(col)col.doc(id).delete().catch(()=>{});else if(RT)rtw(id);else lsave()}
+(async()=>{try{const db=window.claude&&await claude.use('db');if(!db){fallback();return}col=db.collection('cases');
+col.onSnapshot(s=>{cases={};s.docs.forEach(d=>cases[d.id]=d.data());if(!ord||!ord.length)resort();sync=true;render()},()=>{sync=false})}catch(e){fallback()}})();
+const SYNC={url:'',room:''};var RT=null;
+const kid=id=>String(id).replace(/[.$#\[\]\/]/g,'_');
+function syncCfg(){try{const q=new URLSearchParams(location.search);if(q.get('fb')){ls('fb_url',q.get('fb'));ls('fb_room',q.get('room')||'')}}catch(e){}const url=(ls('fb_url')||SYNC.url||'').trim().replace(/\/+$/,''),room=(ls('fb_room')||SYNC.room||'').trim();return url&&room?{url,room}:null}
+function fallback(){const c=syncCfg();c?rtmode(c):lmode()}
+function cloudChip(){return `<button class="chip" data-a="cloud" title="Cấu hình đồng bộ nhiều thiết bị">${RT?(sync?'☁ Đã đồng bộ':'☁ Mất kết nối'):'☁ Đồng bộ'}</button>`}
+function rtw(id,p){const k=encodeURIComponent(kid(id)),u=`${RT}/cases/${k}.json`;try{fetch(u,cases[id]?{method:'PATCH',body:JSON.stringify({...p,id:cases[id].id||id})}:{method:'DELETE'}).catch(()=>{})}catch(e){}}
+function rtmode(c){RT=`${c.url}/rooms/${encodeURIComponent(c.room)}`;let raw={};
+const build=()=>{cases={};Object.keys(raw).forEach(k=>{const o=raw[k];if(o&&typeof o==='object')cases[o.id||k]=o});if(!ord||!ord.length)resort();render()};
+const setp=(path,data)=>{const ps=path.split('/').filter(Boolean);if(!ps.length){raw=data&&typeof data==='object'?data:{};return}let o=raw;for(let i=0;i<ps.length-1;i++){if(!o[ps[i]]||typeof o[ps[i]]!=='object')o[ps[i]]={};o=o[ps[i]]}const l=ps[ps.length-1];if(data===null||data===undefined)delete o[l];else o[l]=data};
+const es=new EventSource(`${RT}/cases.json`);
+es.addEventListener('open',()=>{sync=true;render()});
+es.addEventListener('put',e=>{const m=JSON.parse(e.data);setp(m.path,m.data);build()});
+es.addEventListener('patch',e=>{const m=JSON.parse(e.data),b=m.path==='/'?'':m.path;Object.keys(m.data||{}).forEach(k=>setp(b+'/'+k,m.data[k]));build()});
+es.onerror=()=>{sync=false;render()};render()}
+function lmode(){LAST=ls(LK)||'{}';try{cases=JSON.parse(LAST)||{}}catch(e){cases={}}if(!ord||!ord.length)resort();render();window.addEventListener('storage',e=>{if(e.key===LK)lsync()});try{BC=new BroadcastChannel('icsi_sync');BC.onmessage=lsync}catch(e){}setInterval(lsync,1000)}
 
 function tm(v){if(typeof v==='number')return hm(v*1440);const m=String(v||'').match(/(\d{1,2}):(\d{2})/);return m?hm(+m[1]*60+ +m[2]):null}
 function sp(r){const n=['PESA','TESE','MicroTESE','Rã tinh trùng','Đông tinh','Xin tinh trùng'].filter(k=>String(r[k]).toUpperCase()==='YES');return n.length?{sperm:'khac',spermNote:n.join(', ')}:{sperm:'tuoi',spermNote:''}}
@@ -293,15 +308,12 @@ return `<div id="al41" class="al41"></div><div class="sumr"><span>Đã tiêm xon
 
 function render(){const a=$('#app'),sy=window.scrollY;if(!role){a.innerHTML=`<div class="ov"><div class="pop"><h1>Kiểm <b>quy trình</b> ICSI</h1><div class="sub">Chọn vai trò</div><div class="login"><button class="btn" data-a="role" data-v="admin">Quản lý</button>${ICSI.map(n=>`<button class="btn" data-a="role" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div></div></div>`;return}
 const adm=role==='admin';if(!adm)tab='icsi';
-const act=document.activeElement;if(act&&(act.tagName==='SELECT'||act.tagName==='INPUT'&&(act.dataset.t||act.dataset.n||act.dataset.fin)))return;
+const act=document.activeElement;if(act&&(act.tagName==='SELECT'||act.tagName==='INPUT'&&(act.dataset.t||act.dataset.n||act.dataset.fin))){pend=true;return}
 let body=tab==='tach'?vTach():tab==='icsi'?vIcsi():`<div class="ph"><b>Rửa PI</b></div>`;
-let pop='';if(!adm){const c=Object.values(cases).find(c=>c.assignee===role&&!c.ack);if(c){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
-pop=`<div class="ov"><div class="pop"><div class="sub pulse" style="display:inline-block;border-radius:99px;padding:2px 10px;background:var(--ac2);color:var(--ac)">Ca mới</div>${cardIcsi(c).replace('class="card','class="card" style="animation:none;border:0;padding:8px 0" data-x="').replace(/<div class="row">[^]*?<\/div>/,'')}<button class="btn pri" style="width:100%;margin-top:14px;padding:16px" data-a="ack" data-id="${esc(c.id)}">Đã nhận</button></div></div>`}}
-if(warn)pop+=`<div class="ov"><div class="pop"><h1>Chưa chọn giờ</h1><div class="sub">${warn.length} ca</div>${warn.map(i=>cases[i]?`<div class="li"><b>${esc(cases[i].sttch||cases[i].stt)}. ${esc(cases[i].name)}</b></div>`:'').join('')}<div class="row"><button class="btn" data-a="wback">Quay lại</button><button class="btn pri" data-a="wgo">Vẫn xác nhận</button></div></div></div>`;
-if(early&&cases[early]){const c=cases[early],d=due(c);pop+=`<div class="ov"><div class="pop"><h1>Chưa đủ giờ</h1><div class="sub">${esc(c.name)} · giờ tách ${hm(key(c))}${d>0?' · còn '+d+' phút':''}</div><div class="row"><button class="btn" data-a="eback">Quay lại</button><button class="btn pri" data-a="ego">Vẫn xong</button></div></div></div>`}
-if(fin&&cases[fin.id]){const c=cases[fin.id],fi=(k,l,m)=>`<label class="cn" style="font-size:13px">${l}<input class="tx" style="font-size:18px;padding:10px" inputmode="${m}" data-fin="${k}" value="${esc(fin[k])}"></label>`;pop+=`<div class="ov"><div class="pop"><h1>${esc(c.name)}</h1><div class="sub">Phân bố sau tách · ${fin.t}</div><div class="g3">${fi('d1','Đĩa 1','numeric')}${fi('d2','Đĩa 2','numeric')}${fi('pos','Vị trí','text')}</div><div class="row"><button class="btn" data-a="fcancel">Hủy</button><button class="btn pri" data-a="fsave">Lưu</button></div></div></div>`}
+let pop='';if(!adm){const L=Object.values(cases).filter(c=>c.assignee===role&&!c.ack).sort((a,b)=>(a.asgAt||0)-(b.asgAt||0));if(L.length){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+pop=`<div class="ov"><div class="pop"><div class="sub pulse" style="display:inline-block;border-radius:99px;padding:2px 10px;background:var(--ac2);color:var(--ac)">Ca mới · ${L.length}</div><div style="max-height:60vh;overflow:auto;margin-top:8px">${L.map(c=>`<div class="li" style="align-items:center;gap:10px"><span style="flex:1;min-width:0"><b>${esc(c.sttch||c.stt||'')}. ${esc(c.name)}</b><div class="sub">Nang SA ${esc(c.nang)} · Phân bố <b>${esc(distT(c))}</b> · Vị trí <b>${esc(c.pos||'–')}</b></div></span><button class="btn pri ar" data-a="ack" data-id="${esc(c.id)}" title="Đã nhận">✓</button></div>`).join('')}</div>${L.length>1?`<button class="btn pri" style="width:100%;margin-top:14px;padding:16px" data-a="ackall">Đã nhận tất cả</button>`:''}</div></div>`}}
 if(imp)pop+=`<div class="ov"><div class="pop"><h1>Chọn ca</h1><div class="sub">${imp.length} ca</div>${imp.map((c,i)=>`<label class="li"><input type="checkbox" data-i="${i}" ${c._s?'checked':''}><span><b>${esc(c.stt)}. ${esc(c.name)}</b> <span class="sub">HcG ${c.hcg} · ${esc(c.date)}</span></span></label>`).join('')}<div class="row"><button class="btn" data-a="all">Chọn tất cả</button><button class="btn" data-a="cancel">Hủy</button><button class="btn pri" data-a="ok">Nhập</button></div></div></div>`;
-a.innerHTML=`<header><h1>Kiểm <b>quy trình</b> ICSI</h1>${adm?`<nav>${[['tach','Tách trứng'],['icsi','ICSI'],['pi','Rửa PI']].map(([k,l])=>`<button class="${tab===k?'on':''}" data-a="tab" data-v="${k}">${l}</button>`).join('')}</nav>`:''}<span class="sp"></span><button class="chip" data-a="thm">Giao diện</button><span class="sub"><span class="dot ${sync?'on':''}"></span>${sync?'Đồng bộ':'Cục bộ'}</span><span class="clock" id="clk"></span>${adm?`<label class="chip">Nhập Excel<input id="f" type="file" accept=".xls,.xlsx" hidden></label><button class="chip" data-a="clear">Xóa ca</button>`:''}${adm?'':alChip()}<button class="chip" data-a="out">${adm?'Quản lý':esc(role)}</button></header>${thOpen?THP():''}<main>${body}</main>${pop}`;document.querySelectorAll('[data-k]').forEach(e=>seen.add(e.dataset.k));scrollTo(0,sy);tick()}
+a.innerHTML=`<header><h1>Kiểm <b>quy trình</b> ICSI</h1>${adm?`<nav>${[['tach','Tách trứng'],['icsi','ICSI'],['pi','Rửa PI']].map(([k,l])=>`<button class="${tab===k?'on':''}" data-a="tab" data-v="${k}">${l}</button>`).join('')}</nav>`:''}<span class="sp"></span><button class="chip" data-a="thm">Giao diện</button><span class="sub"><span class="dot ${sync?'on':''}"></span>${sync?'Đồng bộ':'Cục bộ'}</span><span class="clock" id="clk"></span>${adm?`<label class="chip">Nhập Excel<input id="f" type="file" accept=".xls,.xlsx" hidden></label><button class="chip" data-a="clear">Xóa ca</button>`:''}${col?'':cloudChip()}${adm?'':alChip()}<button class="chip" data-a="out">${adm?'Quản lý':esc(role)}</button></header>${thOpen?THP():''}<main>${body}</main>${pop}`;document.querySelectorAll('[data-k]').forEach(e=>seen.add(e.dataset.k));scrollTo(0,sy);tick()}
 const $=s=>document.querySelector(s);
 var tick=function(){const c=$('#clk');if(c)c.textContent=hms();document.querySelectorAll('[data-live]').forEach(e=>e.textContent=hms());document.querySelectorAll('[data-rt]').forEach(e=>{const d=pm(e.dataset.rt)-nowM();e.textContent=d>0?`${d} phút`:'Sẵn sàng';e.classList.toggle('rd',d<=0)})}
 function rem41(h){let d=((h-nowM())%1440+1440)%1440;if(d>720)d-=1440;return d}
@@ -324,6 +336,7 @@ function alEnable(){alWake();try{if('Notification' in window&&Notification.permi
 function alChip(){const ok='Notification' in window&&Notification.permission==='granted',no='Notification' in window&&Notification.permission==='denied';return `<button class="chip" data-a="aln" title="${no?'Trình duyệt đang chặn thông báo, hãy mở khóa trong cài đặt trang':'Bật thông báo pop-up khi có ca mới'}">${ok?'🔔 Đang bật':no?'🔕 Bị chặn':'🔔 Bật thông báo'}</button>`}
 const _r=render;render=function(){_r();alCheck()};
 setInterval(()=>{if(AL.on){AL.n++;document.title=AL.n%2?'🔔 CA MỚI – '+AL.tt:AL.tt;if(AL.n%3===0)try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}},1000);
+document.addEventListener('focusout',()=>{if(pend){pend=false;setTimeout(render,60)}});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)alWake()});
 setInterval(()=>{if(!document.hidden)tick()},1000);
 document.addEventListener('input',e=>{const t=e.target;if(t.classList.contains('tm')){const d=t.value.replace(/\D/g,'').slice(0,6);t.value=d.length>4?d.slice(0,2)+':'+d.slice(2,4)+':'+d.slice(4):d.length>2?d.slice(0,2)+':'+d.slice(2):d}if(t.dataset.t)tinp[t.dataset.t]=t.value;if(t.dataset.fin&&fin)fin[t.dataset.fin]=t.value});
@@ -333,6 +346,7 @@ if(t.dataset.i!==undefined)imp[+t.dataset.i]._s=t.checked;if(t.dataset.ps){const
 document.addEventListener('click',e=>{if(thOpen&&!e.target.closest('.thp,[data-a="thm"]')){thOpen=false;render()}const b=e.target.closest('[data-a]');if(!b)return;const{a,id,v}=b.dataset;
 if(a==='role'){role=v;ls('role',v);render();if(v!=='admin')alEnable()}
 else if(a==='aln')alEnable()
+else if(a==='cloud'){const u=prompt('Địa chỉ Firebase Realtime Database (https://….firebasedatabase.app):',ls('fb_url')||'');if(u===null)return;const r=prompt('Mã phòng (chuỗi dài, bí mật, dùng chung cho mọi thiết bị):',ls('fb_room')||'');if(r===null)return;ls('fb_url',u.trim());ls('fb_room',r.trim());location.reload()}
 else if(a==='out'){role=null;ls('role',null);render()}
 else if(a==='tab'){tab=v;resort();render()}
 else if(a==='mode')save(id,{mode:+v})
@@ -356,10 +370,11 @@ else if(a==='wback'){warn=null;render()}
 else if(a==='wgo'){warn=null;resort();render()}
 else if(a==='time'){if(tinp[id]){resort();save(id,{done:tinp[id]});delete tinp[id]}}
 else if(a==='inc')save(id,{incub:v==='1'})
-else if(a==='asg'){if(cases[id]?.assignee!==v)save(id,{assignee:v,ack:false,icsiDone:null})}
+else if(a==='asg'){if(cases[id]?.assignee!==v)save(id,{assignee:v,ack:false,icsiDone:null,asgAt:Date.now()})}
 else if(a==='unasg')save(id,{assignee:null,ack:false})
 else if(a==='undo'){resort();save(id,{done:null,assignee:null,ack:false})}
 else if(a==='ack')save(id,{ack:true})
+else if(a==='ackall')Object.values(cases).filter(c=>c.assignee===role&&!c.ack).forEach(c=>save(c.id,{ack:true}))
 else if(a==='idone'){const c=cases[id];if(c.incub&&incLeft(c)>0)return;save(id,{icsiDone:hm(nowM())})}
 else if(a==='all'){imp.forEach(c=>c._s=true);render()}
 else if(a==='cancel'){imp=null;render()}
