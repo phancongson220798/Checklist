@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kiểm quy trình ICSI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@200;300;400;500&display=swap">
+<style>
+:root{--canvas:#010102;--bg:#141516;--card:#0f1011;--ink:#f7f8f8;--mut:#8a8f98;--line:#23252a;--ac:#5e6ad2;--ac2:color-mix(in srgb,var(--ac) 14%,transparent);--warn:#e5a23c;--ok:#27a644;--bad:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+html{background:var(--canvas)}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--canvas) fixed;min-height:100vh;color:var(--ink);font:500 16px/1.4 Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:14px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+h1{font-size:19px;margin:0;letter-spacing:.2px}h1 b{color:var(--ac)}
+nav{display:flex;gap:6px;background:var(--bg);padding:4px;border-radius:14px;margin-left:12px}
+nav button{border:0;background:none;color:var(--mut);font:500 15px Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:10px 18px;border-radius:11px;transition:.25s;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff;box-shadow:0 4px 12px #0f9d8a55}
+.sp{flex:1}.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:12px;font:500 14px Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--warn);display:inline-block;margin-right:6px}.dot.on{background:var(--ok)}
+.clock{font:500 20px Be Vietnam Pro,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--ac)}
+main{padding:20px;max-width:1400px;margin:auto}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);margin:22px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;transition:.3s}.card.new{animation:up .45s both}
+.card.done{border-color:var(--ac)}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.nm{font-size:22px;font-weight:500}.sub{color:var(--mut);font-size:13px}
+.big{font:300 40px Be Vietnam Pro,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--ac);line-height:1}.lab{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;text-align:right}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.tag{background:var(--bg);border-radius:8px;padding:4px 9px;font-size:13px}.tag.w{background:#e8890c22;color:var(--warn)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.seg button,.btn{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:12px 6px;font:500 15px Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer;transition:.2s}
+.seg button small{display:block;font:500 12px Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--mut)}.seg button b{font:500 20px Be Vietnam Pro,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.seg button.on,.btn.on{background:var(--ac);border-color:var(--ac);color:#fff}.seg button.on small{color:#ffffffcc}
+.seg button:active,.btn:active{transform:scale(.95)}
+.btn.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.btn.ghost{border-style:dashed}
+.row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}.row>*{flex:1}
+input[type=time]{font:500 18px Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);min-width:110px}
+.box{background:var(--ac2);border-radius:14px;padding:12px 14px;margin-top:12px}
+.cd{font-weight:500;color:var(--warn)}.cd.rd{color:var(--ok)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:18px}
+.col{background:var(--bg);border-radius:20px;padding:6px}.col h3{margin:10px 12px;font-size:17px;display:flex;justify-content:space-between}
+.col .card{margin:10px 0}.badge{background:var(--ac);color:#fff;border-radius:99px;padding:1px 10px;font-size:13px}
+.empty{color:var(--mut);text-align:center;padding:50px 10px}
+.ov{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20;animation:fade .25s;padding:20px}
+@keyframes fade{from{opacity:0}}
+.pop{background:var(--card);border-radius:26px;padding:28px;max-width:520px;width:100%;max-height:90%;overflow:auto;animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.pulse{animation:pl 1.2s infinite}@keyframes pl{50%{box-shadow:0 0 0 14px #0f9d8a00,0 0 0 0 #0f9d8a66}}
+.login{display:grid;gap:12px;margin-top:16px}.login .btn{padding:18px;font-size:17px;text-align:left}
+.li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}.li input{width:22px;height:22px}
+.ph{text-align:center;padding:90px 20px;color:var(--mut)}.ph b{display:block;font-size:26px;color:var(--ink);margin-bottom:8px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}@media (max-width:820px){.cols2{grid-template-columns:1fr}}
+.pane{border-radius:24px;padding:14px;border:2px solid}.pane .card{margin-bottom:14px}.pane h3{margin:2px 4px 14px;font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.p1{background:#e8890c1f;border-color:#e8890c}.p1 h3{color:var(--warn)}.p2{background:#2f9e5b1f;border-color:#2f9e5b}.p2 h3{color:var(--ok)}
+.eg{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border-radius:8px;padding:2px 4px 2px 9px;font-size:13px}.eg input{width:60px;font:500 15px Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;border:1.5px solid var(--line);border-radius:7px;padding:4px;background:var(--card);color:var(--ink);text-align:center}
+.sn{width:100%;font:15px Be Vietnam Pro,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:10px 12px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);margin-top:8px}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;transition:.2s}.sw.on{outline:2px solid var(--ac);outline-offset:2px}
+.rw{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
+.stt{font:300 46px Georgia,"Times New Roman",serif;min-width:58px;text-align:center;color:var(--ac)}
+.idn{min-width:0}.idn .nm{font-size:25px;font-weight:500;text-transform:uppercase;line-height:1.1;margin:2px 0}
+.hc{background:var(--ac);color:#fff;border-radius:16px;padding:8px 16px;text-align:center;box-shadow:0 6px 16px #0f9d8a44}.hc .lab{color:#ffffffcc;text-align:center}.hc .hcg{font:300 34px Be Vietnam Pro,system-ui,sans-serif;font-variant-numeric:tabular-nums;line-height:1.05}.hc.dn{background:var(--ok);box-shadow:0 6px 16px #2f9e5b44}
+.opt{display:grid;grid-template-columns:1fr auto;gap:10px;margin:14px 0 4px}.opt .seg{margin:0}.opt .seg button{padding:14px 6px;border-width:2px}.opt .seg button.on{box-shadow:0 6px 16px #0f9d8a55;transform:scale(1.03)}
+.sv{padding:0 18px;line-height:1.15}.sv small{display:block;font:500 11px Be Vietnam Pro,system-ui,sans-serif}.sv:disabled{opacity:.4;cursor:default}
+.spb{border:0;font-size:13px;cursor:pointer;color:var(--ink)}.spb.k{background:#7c5cd622;color:#7c5cd6;font-weight:500}
+.eg2{font:14px Be Vietnam Pro,system-ui,sans-serif;padding:4px 9px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);min-width:170px}
+/* Linear */
+body{background:#010102;letter-spacing:-.1px}
+header{background:#0f1011;border-bottom:1px solid var(--line);box-shadow:none}
+h1{font-weight:500;letter-spacing:-.4px}h1 b{color:var(--ink);font-weight:500}.clock{color:var(--ink);font-weight:500}
+nav{background:var(--bg);border-radius:10px}nav button{border-radius:8px;font-weight:500}
+nav button.on{background:#23252a;color:var(--ink);box-shadow:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:none}
+.card.done{border-color:#27a64466}
+.btn,.seg button,.chip{border-radius:8px;background:var(--bg);border:1px solid #34343a;color:var(--ink);font-weight:500}
+.seg button.on,.btn.on,.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff;box-shadow:none}
+.seg button.on small{color:#ffffffbb}.btn.ghost{background:transparent;border-style:solid}
+.stt{font:500 38px Be Vietnam Pro,system-ui,sans-serif;color:var(--mut)}
+.idn .nm{font-weight:500;letter-spacing:-.4px}
+.hc{background:var(--ac);color:#fff;border-radius:10px;box-shadow:none}.hc .lab{color:#ffffffbb}
+.hc.dn{background:var(--ok);box-shadow:none}
+.opt .seg button.on{box-shadow:none;transform:none}
+.pane{border-width:1px;border-radius:14px}
+.p1{background:#e5a23c0f;border-color:#e5a23c55}.p2{background:#27a6440f;border-color:#27a64455}
+.col{background:transparent;border:1px solid var(--line);border-radius:14px}
+.badge{background:#23252a;color:var(--ink)}
+input[type=time],.eg input,.sn,.eg2{background:var(--bg);color:var(--ink);border:1px solid #34343a;border-radius:8px}
+.tag{border-radius:6px;background:var(--bg)}.tag.w{background:#e5a23c22;color:var(--warn)}
+.spb.k{background:var(--ac2);color:var(--ink)}
+.pop{background:var(--card);border:1px solid #34343a;border-radius:16px;box-shadow:0 24px 64px #000a}
+.sw{border:2px solid var(--line)}.sw.on{outline-color:var(--ink)}
+.lab,.sub{text-shadow:none}
+.cols4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}@media (max-width:1100px){.cols4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.col h3{font-size:15px;align-items:center}.col .nm{font-size:18px}.col .stt{font-size:28px;min-width:36px}.col .rw{gap:10px}
+.nmh{color:var(--mut);padding:3px 12px;border-radius:99px;font-weight:500}.nmh.on{background:var(--ac);color:#fff}
+.col.me{border-color:var(--ac);background:var(--ac2)}
+.tag.cd{background:var(--ac2);color:var(--ink);font-weight:500}.tag.fzt{background:#e5a23c;color:#1a1200;font-weight:500}
+.card.fz{border:2px solid #e5a23c;box-shadow:0 0 0 3px #e5a23c26}
+.hus{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:15px}.hus b{font-weight:500;text-transform:uppercase}
+.eg select{font:500 14px Be Vietnam Pro,system-ui,sans-serif;background:var(--bg);color:var(--ink);border:1px solid #34343a;border-radius:7px;padding:5px 6px}
+.card.sel{background:color-mix(in srgb,var(--ac) 16%,var(--card))}
+.lv{font-variant-numeric:tabular-nums;opacity:.85;margin-left:6px}.hc.dn .hcg{font-size:24px}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}@media (max-width:1000px){.cols3{grid-template-columns:1fr}}
+.p0{background:#5e6ad20f;border-color:#5e6ad255}.p0 h3{color:var(--ac)}
+.cols3 .nm{font-size:20px}.cols3 .stt{font-size:30px;min-width:40px}.cols3 .rw{gap:10px}
+.g6{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.cn{display:flex;flex-direction:column;font-size:12px;color:var(--mut)}
+.cn input,.dr input{width:100%;font:500 15px Be Vietnam Pro,system-ui,sans-serif;border:1px solid #34343a;border-radius:8px;padding:8px 4px;background:var(--bg);color:var(--ink);text-align:center;margin-top:3px}
+.dr{display:grid;grid-template-columns:84px 64px 1fr;gap:8px;align-items:center;margin-top:8px;font-size:14px}.dr input{margin:0}
+.dr span{display:flex;gap:6px;min-width:0}.dr select{font:500 14px Be Vietnam Pro,system-ui,sans-serif;background:var(--bg);color:var(--ink);border:1px solid #34343a;border-radius:8px;padding:8px 4px;min-width:0;flex:1}
+.al41{display:none;margin-bottom:12px;padding:12px 16px;border-radius:10px;background:#e5a23c33;border:1px solid var(--warn);color:var(--warn);font-weight:500}
+.w41b{display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-weight:500}
+.card.w41{background:#e5a23c30;border-color:var(--warn)}.card.w41 .w41b{display:block;background:var(--warn);color:#1a1200}
+.card.o41{background:#e5484d33;border-color:var(--bad);animation:bl 1s infinite}.card.o41 .w41b{display:block;background:var(--bad);color:#fff}
+@keyframes bl{50%{box-shadow:0 0 0 4px #e5484d55}}
+.card{padding:12px}.meta{margin:8px 0 0;gap:5px;align-items:center}.meta.mini{margin-top:6px}.box{margin-top:8px;padding:8px 10px}.row{margin-top:8px}
+.stt,.cols3 .stt{font-size:24px;min-width:30px}.idn .nm,.cols3 .nm{font-size:18px;margin:0}.rw,.cols3 .rw{gap:10px}
+.hc{padding:4px 10px}.hc .hcg,.hc.dn .hcg{font-size:20px}.hc .lab{font-size:10px}
+.tag.nang{background:var(--ac);color:#fff;font-weight:500;font-size:15px;padding:3px 10px}
+.gh{font-weight:500;font-size:15px;padding:3px 10px;border-radius:6px;color:#fff;background:var(--gc)}.g38{--gc:#3b82f6}.g39{--gc:#a855f7}.g40{--gc:#d97706}
+.seg button.sl{border-color:var(--gc);padding:8px 4px;margin:0}.seg button.sl b{font-size:22px}.seg button.sl small{color:var(--gc);font-weight:500}.seg button.sl.on{background:var(--gc);color:#fff}.seg button.sl.on small{color:#fff}.seg button.sm{padding:8px 4px}
+.tm{font:500 16px Be Vietnam Pro,system-ui,sans-serif;padding:8px;border-radius:8px;border:1px solid #34343a;background:var(--bg);color:var(--ink);min-width:0;width:110px;flex:1;font-variant-numeric:tabular-nums}
+.g6{grid-template-columns:repeat(6,1fr);gap:4px}.cn{font-size:10px}.g2{display:grid;grid-template-columns:3fr 2fr;gap:6px;margin-top:8px}.cn input.tx{text-align:left;padding:8px;font-size:14px}
+.btn.ar{flex:0 0 auto;padding:8px 14px;font-size:18px}
+.card{padding:10px}.pane .card{margin-bottom:8px}.cols3 .pane{padding:10px}.stt,.cols3 .stt{font-size:22px;min-width:26px}.rw{align-items:center}
+.hf{display:flex;border:1px solid #34343a;border-radius:8px;overflow:hidden;text-align:center}.hf>div{padding:3px 9px;display:flex;flex-direction:column;line-height:1.15}
+.hf small{font-size:10px;color:var(--mut)}.hf b{font:500 18px Be Vietnam Pro,system-ui,sans-serif;font-variant-numeric:tabular-nums}.hf .gc{background:var(--gc);color:#fff}.hf .gc small{color:#fffc}
+.ib{width:26px;height:26px;border-radius:50%;border:1.5px solid #34343a;background:var(--bg);color:var(--mut);font:italic 700 15px Georgia,serif;padding:0;cursor:pointer}.ib.on{background:var(--ac);border-color:var(--ac);color:#fff}.ib.al{border-color:var(--warn);color:var(--warn)}.ib.on.al{background:var(--warn);color:#1a1200}
+.seg.p5{grid-template-columns:repeat(3,1fr) 1.1fr 1.1fr;gap:5px;margin:8px 0 0}.seg.p5 button.u1,.seg.p5 button.u0{padding:6px 2px;font-size:13px;font-weight:500}
+.seg button.u1{border-color:#ec4899;color:#ec4899}.seg button.u1.on{background:#ec4899;border-color:#ec4899;color:#fff}.seg button.u0.on{background:#4b5563;border-color:#4b5563;color:#fff}
+.ub{background:#ec4899;color:#fff;font-weight:500;font-size:15px;padding:3px 10px;border-radius:6px}.ub.u0{background:var(--bg);color:var(--mut);font-weight:500;font-size:13px}.card.uo{box-shadow:inset 4px 0 0 #ec4899}
+.eg input{width:46px;padding:3px}.btn.pri.ar{font-size:15px;padding:8px 18px}.dd{display:flex;gap:6px;align-items:center}.dd .tm{width:96px;flex:none;color:var(--ok)}
+.nm,.cols3 .nm,.idn .nm{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:16px}.tag.nang,.ib{text-transform:none}
+.seg.p5{grid-template-columns:repeat(3,1fr) 1.4fr}.seg button.ut{border-color:#4b5563;color:var(--mut);font-weight:500;font-size:14px;padding:6px 2px}.seg button.ut.on{background:#ec4899;border-color:#ec4899;color:#fff;font-size:15px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:6px;margin-top:8px}
+.ib{width:20px;height:20px;font-size:12px}
+.seg.p5{grid-template-columns:repeat(3,1fr) 1.1fr 1.1fr}
+.card.due{border:2px solid var(--ok);box-shadow:0 0 0 3px #27a64433}
+.stc{font-weight:500;font-size:14px;padding:4px 10px;border-radius:8px;background:var(--bg);color:var(--mut);white-space:nowrap}.stc.w{background:#ec489933;color:#ec4899}.stc.ok{background:var(--ok);color:#fff}.stc.dn{background:#23252a;color:var(--ink)}
+.dp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.dp>div{background:var(--ac2);border:1px solid var(--ac);border-radius:10px;padding:6px 10px}.dp small{display:block;font-size:11px;color:var(--mut);text-transform:uppercase}.dp b{font:300 26px Be Vietnam Pro,system-ui,sans-serif;letter-spacing:-.5px}
+.row .btn{padding:8px 4px}.row>.ar{flex:0 0 auto;padding:8px 14px}
+.dm{opacity:.45}.seg button.sl.on{box-shadow:0 0 14px var(--gc);transform:scale(1.04)}.seg button.u1.on{box-shadow:0 0 14px #ec4899;transform:scale(1.04)}
+.seg button.u0.on{background:#e5e7eb;border-color:#e5e7eb;color:#111;box-shadow:0 0 12px #e5e7eb88;transform:scale(1.04)}
+.tl3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.tl3>div{border:1px solid #34343a;border-radius:10px;padding:4px 6px;text-align:center;display:flex;flex-direction:column;line-height:1.1}
+.tl3 small{font-size:10px;color:var(--mut)}.tl3 b{font:300 24px Be Vietnam Pro,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tl3 .gc{background:var(--gc);border-color:var(--gc);color:#fff}.tl3 .gc small,.tl3 .nt small{color:#fffc}.tl3 .nt{background:var(--ac);border-color:var(--ac);color:#fff}.tl3 .gx b{color:var(--mut)}
+.seg.p5{grid-template-columns:repeat(3,1fr) 1.1fr 1.1fr auto}.btn:disabled{opacity:.3;cursor:default}.seg.p5 .ar{padding:6px 12px}
+.card.pre{border:2px solid var(--warn);box-shadow:0 0 0 3px #e5a23c26}
+.sl2{display:flex;flex-wrap:wrap;gap:5px;align-items:center}.sl2 .tag.nang{font-size:13px;padding:2px 8px}
+.col .idn .nm{flex-wrap:nowrap}.col .idn .nm>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.col .stc{font-size:12px;padding:3px 8px}.col{padding:4px}.col .card{padding:8px;margin:8px 0}
+.rr{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;margin-top:8px}.rr .row{flex:1 1 140px;margin:0;display:flex;gap:5px;min-width:0}.rr .row .btn{padding:6px 2px;font-size:13px;min-width:0}.rr .row>.ar{padding:6px 10px}
+.dp2{flex:0 0 auto;background:var(--ac2);border:1px solid var(--ac);border-radius:8px;padding:3px 9px;line-height:1.1}.dp2 small{display:block;font-size:9px;color:var(--mut);text-transform:uppercase}.dp2 b{font:500 17px Be Vietnam Pro,system-ui,sans-serif}
+.nm .ub,.sl2 .ub{font-size:12px;padding:2px 8px}
+header{flex-wrap:wrap;row-gap:8px}.sw{width:20px;height:20px}.sw.bg{border-radius:6px;border-color:#5a5f69}.sw.bg.on{outline-color:var(--ink)}
+/* Minimal light */
+:root{--mut:#7d828b}
+html{-webkit-text-size-adjust:100%}body{font-weight:300;letter-spacing:0;background:var(--canvas)}
+b,strong{font-weight:500}.sub{font-weight:300;font-size:12px}
+header{padding:8px 16px;gap:10px;background:var(--canvas);border-bottom:1px solid var(--line)}
+h1{font-size:16px;font-weight:300;letter-spacing:.2px}h1 b{font-weight:500}
+nav{background:none;padding:0;gap:2px;margin-left:8px}nav button{border-radius:0;padding:8px 14px;font-weight:300;color:var(--mut);border-bottom:1.5px solid transparent}
+nav button.on{background:none;color:var(--ink);border-bottom-color:var(--ink);font-weight:400}
+.clock{font-weight:300;font-size:16px}.chip{border:0;background:none;color:var(--mut);font-weight:300;padding:6px 8px}.chip:active{color:var(--ink)}
+main{padding:14px 16px;max-width:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:none}
+.card.new{animation:fade .25s both}.card.done{border-color:var(--line)}
+.card.fz{border:2px solid #e5a23c;box-shadow:none}.card.pre{box-shadow:none;border-width:1px}.card.due{box-shadow:none}
+.pane,.p0,.p1,.p2{background:transparent;border:0;padding:0;border-radius:0;backdrop-filter:none}
+.pane h3,.col h3{font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 2px 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.p1 h3{color:var(--warn)}.p2 h3{color:var(--ok)}
+.badge{background:transparent!important;color:inherit;padding:0;font-weight:400;font-size:12px}
+.col{background:transparent;border:0;padding:0}.col .card{margin:0 0 8px;padding:10px 12px}.col.me{background:transparent}
+.nmh{padding:2px 10px;font-weight:400;font-size:11px;letter-spacing:.08em}.nmh.on{background:var(--ac);color:#fff}.col.me h3{border-bottom-color:var(--ac)}
+.stt,.cols3 .stt,.col .stt{font:300 26px Be Vietnam Pro,system-ui,sans-serif;min-width:34px;color:var(--mut)}
+.idn .nm,.cols3 .nm,.col .nm{font-size:16px;font-weight:400;text-transform:none;letter-spacing:0}
+.btn,.seg button{border-radius:8px;background:transparent;border:1px solid var(--line);font-weight:300;box-shadow:none;backdrop-filter:none}
+.btn.on,.seg button.on{background:var(--ink);color:var(--canvas);border-color:var(--ink);font-weight:400;box-shadow:none;transform:none}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:400}.btn.ghost{background:none}
+.seg button.sl.on,.seg button.u1.on,.seg button.u0.on{box-shadow:none;transform:none}
+.tl3{gap:0;margin-top:8px}.tl3>div{border:0;border-radius:0;padding:2px 8px 2px 0;text-align:left;background:none}
+.tl3 small{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:300}
+.tl3 b{font:300 26px Be Vietnam Pro,system-ui,sans-serif}
+.tl3 .gc{background:none;border:0;color:var(--gc)}.tl3 .gc small,.tl3 .nt small{color:var(--mut)}.tl3 .nt{background:none;color:var(--ink)}
+.hc,.hc.dn{background:none;color:var(--ink);box-shadow:none;padding:0}.hc .hcg{font-weight:300}
+.dp2{background:none;border:0;border-left:1px solid var(--line);border-radius:0;padding:0 10px}.dp2 b{font:300 20px Be Vietnam Pro,system-ui,sans-serif}
+.tag{background:none;border:1px solid var(--line);border-radius:6px;font-weight:300;font-size:12px;padding:1px 7px}
+.tag.nang{background:none;color:var(--ink);border-color:var(--ac);font-size:12px;font-weight:400}.tag.cd{background:none}
+.tag.fzt{background:#e5a23c;color:#1a1200;border-color:#e5a23c;font-weight:500}.tag.w{background:none;border-color:var(--warn);color:var(--warn)}
+.ub{background:none;border:1px solid #ec4899;color:#ec4899;font-weight:400;font-size:12px;padding:1px 7px}.ub.u0{border-color:var(--line);color:var(--mut)}
+.stc{background:none;border:1px solid var(--line);font-weight:400;font-size:12px}.stc.ok{background:none;border-color:var(--ok);color:var(--ok)}.stc.w{background:none;border-color:#ec4899;color:#ec4899}.stc.dn{background:none}
+input,select{font-weight:300}.eg input,.tx,.tm{background:transparent}
+.al41{border-radius:8px;font-weight:400}
+.thp{position:fixed;top:52px;right:12px;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;animation:fade .15s}.thp>div:not(.sub){display:flex;gap:8px}
+.pop{border-radius:14px;box-shadow:none}.ov{backdrop-filter:none;background:#000b}
+*{text-shadow:none!important}
+/* v-next */
+.stt,.cols3 .stt,.col .stt{display:flex;align-items:center;justify-content:center;min-width:40px;height:40px;padding:0 8px;border-radius:10px;background:var(--ac);color:#fff;font:500 20px Be Vietnam Pro,system-ui,sans-serif}
+.card,.col .card{padding:12px 14px}.card.fz,.card.pre{padding:11px 13px}
+.tag,.ub,.stc,.tag.nang{padding:3px 10px;line-height:1.4}.tag.nang{font-size:13px}
+.rw{gap:12px}.nm,.sl2{gap:6px}
+nav{gap:6px;margin-left:12px}nav button{font-size:16px;padding:10px 22px;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-weight:400}
+nav button.on{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:500}
+/* align */
+.pane h3,.col h3{height:44px;margin:0 0 10px;padding:0 2px 8px;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box}
+.cols3,.cols4{align-items:start}
+.sumr{display:flex;gap:24px;margin:0 0 12px;color:var(--mut);font-size:13px}.sumr b{color:var(--ink);font-weight:500;font-size:17px;margin-left:4px}
+</style></head><body>
+<div id="app"></div>
+<script>
+const ICSI=['Nguyễn Khắc Sinh','Nguyễn Văn Long','Đỗ Thị Kim Chi'];
+let cases={},role=ls('role'),tab='tach',col=null,sync=false,tinp={},imp=null,ord=null,warn=null,seen=new Set(),themeI=+(ls('theme')||0),bgI=+(ls('bg')||0),srt=ls('srt')||'time',early=null,fin=null;
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){return null}}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hm=m=>{m=((Math.round(m)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+const pm=s=>{const[a,b]=s.split(':');return+a*60+ +b};
+const nowM=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
+const hms=()=>{const d=new Date();return[d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':')};
+const secs=x=>{if(!x)return 0;const[a,b,c]=String(x).split(':');return+a*3600+ +b*60+ +(c||0)};
+const nowS=()=>{const d=new Date();return d.getHours()*3600+d.getMinutes()*60+d.getSeconds()};
+const incLeft=c=>{let d=((secs(c.done)+(c.incub?1800:0)-nowS())%86400+86400)%86400;return d>43200?d-86400:d};
+const mmss=d=>String(Math.floor(d/60)).padStart(2,'0')+':'+String(d%60).padStart(2,'0');
+const key=c=>pm(c.hcg)+(c.mode||38)*60;
+function resort(){ord=Object.values(cases).sort((a,b)=>key(a)-key(b)).map(c=>c.id)}
+const nt=v=>{const m=String(v).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);if(!m||+m[1]>23||+m[2]>59||+(m[3]||0)>59)return null;return m[1].padStart(2,'0')+':'+m[2]+':'+(m[3]||'00')};
+const no=c=>parseFloat(c.sttch||c.stt)||9999,key41=c=>pm(c.hcg)+41*60,h41=c=>key41(c)%1440;
+function sorted(l,m){return l.slice().sort(m==='stt'?(a,b)=>no(a)-no(b)||key(a)-key(b):(a,b)=>key(a)-key(b)||no(a)-no(b))}
+const TH=[['Indigo','#5e6ad2','#5e6ad2'],['Teal','#14a38b','#14a38b'],['Rose','#d6457a','#d6457a'],['Amber','#c98a0b','#c98a0b'],['Xanh lá','#27a644','#27a644']];
+function applyTheme(i){document.documentElement.style.setProperty('--ac',(TH[i]||TH[0])[1])}
+applyTheme(themeI);
+const BG=[['Đen','#010102'],['Xanh đêm','#0a1424'],['Xanh rêu','#08150f'],['Tím than','#130e24'],['Nâu đỏ','#1c0d10'],['Xám than','#18191c'],['Sáng','#f4f5f7',1],['Kem','#f6f1e7',1]];
+function applyBg(i){const r=document.documentElement.style,b=BG[i]||BG[0],c=b[1];['--canvas','--card','--bg','--line','--ink','--mut','--warn','--ok'].forEach(k=>r.removeProperty(k));r.colorScheme='';
+if(b[2]){r.setProperty('--canvas',c);r.setProperty('--card','#ffffff');r.setProperty('--bg','#eceef2');r.setProperty('--line','#dcdfe5');r.setProperty('--ink','#14171c');r.setProperty('--mut','#6b7280');r.setProperty('--warn','#b86e00');r.setProperty('--ok','#1f8a3b');r.colorScheme='light';return}
+if(!i)return;r.setProperty('--canvas',c);r.setProperty('--card',`color-mix(in srgb,${c} 91%,#fff)`);r.setProperty('--bg',`color-mix(in srgb,${c} 86%,#fff)`);r.setProperty('--line',`color-mix(in srgb,${c} 82%,#fff)`)}
+applyBg(bgI);
+var thOpen=false;
+const THP=()=>`<div class="thp"><div class="sub">Màu nhấn</div><div>${TH.map((t,i)=>`<button class="sw${themeI===i?' on':''}" style="background:${t[2]}" title="${t[0]}" data-a="theme" data-v="${i}"></button>`).join('')}</div><div class="sub">Nền</div><div>${BG.map((t,i)=>`<button class="sw bg${bgI===i?' on':''}" style="background:${t[1]}" title="${t[0]}" data-a="bg" data-v="${i}"></button>`).join('')}</div></div>`;
+const ready=c=>c.done?hm(pm(c.done)+(c.incub?30:0)):null;
+const LK='icsi_cases_v1';function lsave(){ls(LK,JSON.stringify(cases))}
+function save(id,p){cases[id]={...cases[id],...p};render();if(col)col.doc(id).set(cases[id]).catch(()=>{});else lsave()}
+function saveQ(id,p){cases[id]={...cases[id],...p};if(col)col.doc(id).set(cases[id]).catch(()=>{});else lsave()}
+function del(id){delete cases[id];render();if(col)col.doc(id).delete().catch(()=>{});else lsave()}
+(async()=>{try{const db=window.claude&&await claude.use('db');if(!db){lmode();return}col=db.collection('cases');
+col.onSnapshot(s=>{cases={};s.docs.forEach(d=>cases[d.id]=d.data());if(!ord||!ord.length)resort();sync=true;render()},()=>{sync=false})}catch(e){lmode()}})();
+function lmode(){try{cases=JSON.parse(ls(LK)||'{}')||{}}catch(e){cases={}}if(!ord||!ord.length)resort();render();window.addEventListener('storage',e=>{if(e.key===LK){try{cases=JSON.parse(e.newValue||'{}')||{}}catch(x){}render()}})}
+
+function tm(v){if(typeof v==='number')return hm(v*1440);const m=String(v||'').match(/(\d{1,2}):(\d{2})/);return m?hm(+m[1]*60+ +m[2]):null}
+function sp(r){const n=['PESA','TESE','MicroTESE','Rã tinh trùng','Đông tinh','Xin tinh trùng'].filter(k=>String(r[k]).toUpperCase()==='YES');return n.length?{sperm:'khac',spermNote:n.join(', ')}:{sperm:'tuoi',spermNote:''}}
+function parse(buf){const wb=XLSX.read(buf,{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]];
+return XLSX.utils.sheet_to_json(ws,{defval:''}).map(r=>{const o={};for(const k in r)o[k.replace(/\s+/g,' ').trim()]=r[k];return o})
+.filter(r=>r['MHS']&&tm(r['Giờ HcG'])).map(r=>({id:String(r['MHS']).trim(),stt:r['STT'],name:r['Vợ'],dobW:r['NS vợ'],husband:r['Chồng'],dobH:r['NS chồng'],hcg:tm(r['Giờ HcG']),ch:tm(r['Giờ CH'])||'',bs:r['BS chọc hút'],para:String(r['PARA']||'').padStart(4,'0'),nang:r['Số nang SA'],allergy:r['Dị ứng'],note:String(r['Lịch sử nơi khác']||'').trim(),date:r['Ngày CH'],...sp(r),eggs:'',sttch:String(r['STT CH']??''),pos:'',cdcp:String(r['Chỉ định ngày CP']||'').trim(),cdtru:String(r['Chỉ định trữ']||'').trim(),cdsb:String(r['Chỉ định ngày sinh thiết']||'').trim(),dongtrung:Number(r['Đông trứng'])||0}))}
+
+const POS=['BT371-T','BT371-P','BT372-T','BT372-P','BT373-T','BT373-P','BT374-T','BT374-P','BT375-T','BT375-P'];
+const posv=c=>{const v=c.pos||'';return /^\d{4}$/.test(v)?'':v};
+const openI=new Set();
+const nmx=(c,nn)=>{const al=c.allergy&&c.allergy!=='Không',op=openI.has(c.id);return `${c.nang!==''&&!nn?`<span class="tag nang">Nang SA: ${esc(c.nang)}</span>`:''}<button class="ib${op?' on':''}${al?' al':''}" data-a="info" data-id="${esc(c.id)}" title="Thông tin thêm">i</button>${c.dongtrung>0?`<span class="tag fzt">Đông trứng ${c.dongtrung}</span>`:''}`};
+const det=(c,ex)=>{if(!openI.has(c.id))return '';const id=esc(c.id),s=c.sperm||'tuoi',al=c.allergy&&c.allergy!=='Không',cd=[c.cdcp&&'CP '+c.cdcp,c.cdtru,c.cdsb&&'D5/D5'].filter(Boolean).map(t=>`<span class="tag cd">${esc(t)}</span>`).join('');
+return `${ex?`<div class="meta mini">${gh(c)}${ic(c)}<span class="tag cd">Giờ 41 · ${hm(key41(c))}</span><span class="tag">Xong ${esc(c.done)}</span>${c.note?`<span class="sub">${esc(c.note)}</span>`:''}</div>`:''}<div class="meta mini"><span class="sub">PARA ${esc(c.para)} · ${esc(c.bs)}</span>${cd}${al?`<span class="tag w">Dị ứng: ${esc(c.allergy)}</span>`:''}<button class="tag spb ${s==='khac'?'k':''}" data-a="sp" data-id="${id}" data-v="${s==='khac'?'tuoi':'khac'}">${s==='khac'?'Tinh trùng khác':'Tinh trùng tươi'}</button>${s==='khac'?`<input class="eg2" data-n="spermNote" data-id="${id}" placeholder="Ghi chú" value="${esc(c.spermNote||'')}">`:''}</div>`};
+const distT=c=>(c.d1||c.d2)?`${c.d1||0}-${c.d2||0}`:'–';
+const cnt=c=>{const id=esc(c.id),f=(k,l,p)=>`<label class="cn">${l}<input class="tx" data-n="${k}" data-id="${id}" placeholder="${p||''}" value="${esc(c[k]??'')}"></label>`;return `<div class="g3">${f('d1','Đĩa 1')}${f('d2','Đĩa 2')}${f('pos','Vị trí','Viết tay')}</div>`};
+function due(c){let d=((key(c)%1440-nowM())%1440+1440)%1440;if(d>720)d-=1440;return d}
+const hf=c=>`<div class="hf"><div><small>HcG · CH ${esc(c.ch)}</small><b>${c.hcg}</b></div>${c.mode?`<div class="gc g${c.mode}"><small>Giờ ${c.mode}</small><b>${hm(key(c))}</b></div>`:''}</div>`;
+function head(c,r,n){const ut=c.done&&c.incub?`<span class="ub u1"${n?'':` data-ud="${esc(c.done)}"`}>Ủ đến ${ready(c)}</span>`:'';
+if(n===2)return `<div class="rw"><div class="stt">${esc(c.sttch||c.stt||'')}</div><div class="idn"><div class="nm"><span>${esc(c.name)}</span></div><div class="sub sl2"><span>${esc(c.id)} · ${esc(c.dobW)}</span>${nmx(c,false)}${ut}</div></div>${r}</div>${det(c,true)}`;
+return `<div class="rw"><div class="stt">${esc(c.sttch||c.stt||'')}</div><div class="idn"><div class="nm"><span>${esc(c.name)}</span>${n?nmx(c,n===3):''}${ut}</div><div class="sub">${esc(c.id)} · ${esc(c.dobW)}</div></div>${r}</div>${n?det(c,false):''}`}
+const rdy=c=>c.mode&&c.ok;
+const gh=c=>{const m=c.mode||38;return `<span class="gh g${m}">Giờ ${m} · ${hm(key(c))}</span>`};
+const ic=c=>`<span class="ub u${c.incub?1:0}">${c.incub?'Ủ +30p':'Không ủ'}</span>`;
+const slots=c=>[38,39,40].map(h=>`<button class="sl g${h}${c.mode===h?' on':(c.mode?' dm':'')}" data-a="mode" data-id="${esc(c.id)}" data-v="${h}"><small>Giờ ${h}</small><b>${hm(pm(c.hcg)+h*60)}</b></button>`).join('');
+const tiles=c=>`<div class="tl3"><div><small>HcG · CH ${esc(c.ch)}</small><b>${c.hcg}</b></div>${c.mode?`<div class="gc g${c.mode}"><small>Giờ tách ${c.mode}</small><b>${hm(key(c))}</b></div>`:`<div class="gx"><small>Giờ tách</small><b>—</b></div>`}${c.nang!==''?`<div class="nt"><small>Nang SA</small><b>${esc(c.nang)}</b></div>`:''}</div>`;
+function cardPrep(c){const id=esc(c.id),nw=seen.has('t'+c.id)?'':' new';
+return `<div class="card${nw}${fz(c)}" data-k="t${c.id}">${head(c,'',3)}${tiles(c)}<div class="seg p5">${slots(c)}<button class="u1 ${c.incub?'on':'dm'}" data-a="inc" data-id="${id}" data-v="1">Ủ +30p</button><button class="u0 ${c.incub?'dm':'on'}" data-a="inc" data-id="${id}" data-v="0">Không ủ</button><button class="btn pri ar" data-a="okprep" data-id="${id}" title="Xác nhận" ${c.mode?'':'disabled'}>✓</button></div></div>`}
+function cardTach(c){const id=esc(c.id),nw=seen.has('t'+c.id)?'':' new';
+if(!c.done){return `<div class="card${nw}${fz(c)}${c.incub?' uo':''}" data-k="t${c.id}" data-tk="${key(c)%1440}">${head(c,'',3)}${tiles(c)}<div class="meta">${ic(c)}<span class="sp"></span><button class="btn ar" data-a="unprep" data-id="${id}" title="Về chuẩn bị">↩</button><button class="btn pri ar" data-a="now" data-id="${id}">Xong</button></div></div>`}
+return `<div class="card done${nw}${fz(c)}" data-k="t${c.id}">${head(c,`<div class="dd"><input class="tm" inputmode="numeric" maxlength="8" placeholder="HH:MM:SS" data-n="done" data-id="${id}" value="${c.done}"><button class="btn ghost ar" data-a="undo" data-id="${id}" title="Hoàn tác">↩</button></div>`)}${cnt(c)}</div>`}
+const sn=n=>n.split(' ').pop();
+const fz=c=>c.dongtrung>0?' fz':'';
+function cardIcsi(c){const id=esc(c.id),rd=ready(c),nw=seen.has('i'+c.id)?'':' new',adm=role==='admin',mine=adm||role===c.assignee,wt=!c.icsiDone&&c.incub&&incLeft(c)>0;
+const names=adm&&!c.icsiDone?ICSI.map(n=>`<button class="btn${c.assignee===n?' on':''}" data-a="asg" data-id="${id}" data-v="${esc(n)}" title="${esc(n)}">${esc(sn(n))}</button>`).join(''):'';
+const acts=c.icsiDone?'':`${adm&&c.assignee?`<button class="btn ar" data-a="unasg" data-id="${id}" title="Về chờ tiêm">↩</button>`:''}${mine&&c.assignee?`<button class="btn pri ar" data-a="idone" data-id="${id}" title="Tiêm xong"${wt?' disabled':''}>✓</button>`:''}`;
+const st=c.icsiDone?`<div class="stc dn">Xong ${c.icsiDone}</div>`:`<div class="stc" data-st data-rd="${rd}" data-dn="${esc(c.done)}" data-u="${c.incub?1:0}" data-as="${c.assignee?1:0}"></div>`;
+return `<div class="card ${c.icsiDone?'done':''}${nw}${fz(c)}${wt?' pre':''}" data-k="i${c.id}"${c.icsiDone?'':` data-h41="${h41(c)}"`}>${head(c,st,2)}<div class="rr"><div class="dp2"><small>Phân bố</small><b>${esc(distT(c))}</b></div><div class="dp2"><small>Vị trí</small><b>${esc(c.pos||'–')}</b></div>${names||acts?`<div class="row">${names}${acts}</div>`:''}</div>${c.icsiDone?'':'<div class="w41b" data-w41></div>'}</div>`}
+
+function vTach(){const all=Object.values(cases);
+if(!all.length)return `<div class="empty">Chưa có ca</div>`;
+const nd=all.filter(c=>!c.done),a=sorted(nd.filter(c=>!rdy(c)),'stt'),b=sorted(nd.filter(rdy),srt),d=sorted(all.filter(c=>c.done&&!c.icsiDone),'time'),em=t=>`<div class="empty">${t}</div>`,sb=(v,l)=>`<button class="btn${srt===v?' on':''}" style="padding:6px 10px;font-size:13px" data-a="srt" data-v="${v}">${l}</button>`;
+return `<div class="cols3"><section class="pane p0"><h3>Chuẩn bị <span class="badge">${a.length}</span></h3>${a.map(cardPrep).join('')||em('Hết ca chuẩn bị')}</section><section class="pane p1"><h3>Chờ tách <span style="display:flex;gap:6px;align-items:center">${sb('time','Giờ tách')}${sb('stt','Thứ tự')}<span class="badge" style="background:var(--warn)">${b.length}</span></span></h3>${b.map(cardTach).join('')||em('Hết ca chờ')}</section><section class="pane p2"><h3>Đã tách <span class="badge" style="background:var(--ok)">${d.length}</span></h3>${d.map(cardTach).join('')||em('Trống')}</section></div>`}
+
+function vIcsi(){const all=Object.values(cases),hg=c=>pm(c.hcg);
+const tot=all.length,dn=all.filter(c=>c.icsiDone).length;
+const wait=all.filter(c=>c.done&&!c.assignee).sort((a,b)=>hg(a)-hg(b)||no(a)-no(b));
+const srt2=(a,b)=>(a.icsiDone?1:0)-(b.icsiDone?1:0)||(a.icsiDone?no(a)-no(b):hg(a)-hg(b)||no(a)-no(b));
+const colh=(h,n,me,l)=>`<div class="col${me?' me':''}"><h3><span class="nmh${me?' on':''}">${h}</span><span class="badge">${n}</span></h3>${l.map(c=>cardIcsi(c)).join('')||'<div class="empty">Trống</div>'}</div>`;
+return `<div id="al41" class="al41"></div><div class="sumr"><span>Đã tiêm xong <b>${dn}/${tot}</b></span><span>Còn lại <b>${tot-dn}</b></span></div><div class="cols4">${colh('Chờ tiêm',wait.length,false,wait)}${ICSI.map(n=>{const l=all.filter(c=>c.assignee===n).sort(srt2),d=l.filter(c=>c.icsiDone).length;return colh(esc(n),`${d}/${l.length}`,n===role,l)}).join('')}</div>`}
+
+function render(){const a=$('#app'),sy=window.scrollY;if(!role){a.innerHTML=`<div class="ov"><div class="pop"><h1>Kiểm <b>quy trình</b> ICSI</h1><div class="sub">Chọn vai trò</div><div class="login"><button class="btn" data-a="role" data-v="admin">Quản lý</button>${ICSI.map(n=>`<button class="btn" data-a="role" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div></div></div>`;return}
+const adm=role==='admin';if(!adm)tab='icsi';
+const act=document.activeElement;if(act&&(act.tagName==='SELECT'||act.tagName==='INPUT'&&(act.dataset.t||act.dataset.n||act.dataset.fin)))return;
+let body=tab==='tach'?vTach():tab==='icsi'?vIcsi():`<div class="ph"><b>Rửa PI</b></div>`;
+let pop='';if(!adm){const c=Object.values(cases).find(c=>c.assignee===role&&!c.ack);if(c){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+pop=`<div class="ov"><div class="pop"><div class="sub pulse" style="display:inline-block;border-radius:99px;padding:2px 10px;background:var(--ac2);color:var(--ac)">Ca mới</div>${cardIcsi(c).replace('class="card','class="card" style="animation:none;border:0;padding:8px 0" data-x="').replace(/<div class="row">[^]*?<\/div>/,'')}<button class="btn pri" style="width:100%;margin-top:14px;padding:16px" data-a="ack" data-id="${esc(c.id)}">Đã nhận</button></div></div>`}}
+if(warn)pop+=`<div class="ov"><div class="pop"><h1>Chưa chọn giờ</h1><div class="sub">${warn.length} ca</div>${warn.map(i=>cases[i]?`<div class="li"><b>${esc(cases[i].sttch||cases[i].stt)}. ${esc(cases[i].name)}</b></div>`:'').join('')}<div class="row"><button class="btn" data-a="wback">Quay lại</button><button class="btn pri" data-a="wgo">Vẫn xác nhận</button></div></div></div>`;
+if(early&&cases[early]){const c=cases[early],d=due(c);pop+=`<div class="ov"><div class="pop"><h1>Chưa đủ giờ</h1><div class="sub">${esc(c.name)} · giờ tách ${hm(key(c))}${d>0?' · còn '+d+' phút':''}</div><div class="row"><button class="btn" data-a="eback">Quay lại</button><button class="btn pri" data-a="ego">Vẫn xong</button></div></div></div>`}
+if(fin&&cases[fin.id]){const c=cases[fin.id],fi=(k,l,m)=>`<label class="cn" style="font-size:13px">${l}<input class="tx" style="font-size:18px;padding:10px" inputmode="${m}" data-fin="${k}" value="${esc(fin[k])}"></label>`;pop+=`<div class="ov"><div class="pop"><h1>${esc(c.name)}</h1><div class="sub">Phân bố sau tách · ${fin.t}</div><div class="g3">${fi('d1','Đĩa 1','numeric')}${fi('d2','Đĩa 2','numeric')}${fi('pos','Vị trí','text')}</div><div class="row"><button class="btn" data-a="fcancel">Hủy</button><button class="btn pri" data-a="fsave">Lưu</button></div></div></div>`}
+if(imp)pop+=`<div class="ov"><div class="pop"><h1>Chọn ca</h1><div class="sub">${imp.length} ca</div>${imp.map((c,i)=>`<label class="li"><input type="checkbox" data-i="${i}" ${c._s?'checked':''}><span><b>${esc(c.stt)}. ${esc(c.name)}</b> <span class="sub">HcG ${c.hcg} · ${esc(c.date)}</span></span></label>`).join('')}<div class="row"><button class="btn" data-a="all">Chọn tất cả</button><button class="btn" data-a="cancel">Hủy</button><button class="btn pri" data-a="ok">Nhập</button></div></div></div>`;
+a.innerHTML=`<header><h1>Kiểm <b>quy trình</b> ICSI</h1>${adm?`<nav>${[['tach','Tách trứng'],['icsi','ICSI'],['pi','Rửa PI']].map(([k,l])=>`<button class="${tab===k?'on':''}" data-a="tab" data-v="${k}">${l}</button>`).join('')}</nav>`:''}<span class="sp"></span><button class="chip" data-a="thm">Giao diện</button><span class="sub"><span class="dot ${sync?'on':''}"></span>${sync?'Đồng bộ':'Cục bộ'}</span><span class="clock" id="clk"></span>${adm?`<label class="chip">Nhập Excel<input id="f" type="file" accept=".xls,.xlsx" hidden></label><button class="chip" data-a="clear">Xóa ca</button>`:''}${adm?'':alChip()}<button class="chip" data-a="out">${adm?'Quản lý':esc(role)}</button></header>${thOpen?THP():''}<main>${body}</main>${pop}`;document.querySelectorAll('[data-k]').forEach(e=>seen.add(e.dataset.k));scrollTo(0,sy);tick()}
+const $=s=>document.querySelector(s);
+var tick=function(){const c=$('#clk');if(c)c.textContent=hms();document.querySelectorAll('[data-live]').forEach(e=>e.textContent=hms());document.querySelectorAll('[data-rt]').forEach(e=>{const d=pm(e.dataset.rt)-nowM();e.textContent=d>0?`${d} phút`:'Sẵn sàng';e.classList.toggle('rd',d<=0)})}
+function rem41(h){let d=((h-nowM())%1440+1440)%1440;if(d>720)d-=1440;return d}
+const _t=tick;tick=function(){_t();document.querySelectorAll('[data-st]').forEach(e=>{const u=e.dataset.u==='1';let ds=((secs(e.dataset.dn)+(u?1800:0)-nowS())%86400+86400)%86400;if(ds>43200)ds-=86400;const d=ds>0?1:0;let t,k;if(u&&ds>0){t=`Ủ còn ${mmss(ds)}`;k='w'}else{t='Sẵn sàng';k='ok'}e.textContent=t;e.className='stc '+k;const cd=e.closest('.card');if(cd){const w=u&&d>0;cd.classList.toggle('pre',w);const ib=cd.querySelector('[data-a="idone"]');if(ib)ib.disabled=w}});
+document.querySelectorAll('[data-ud]').forEach(e=>{const ds=incLeft({done:e.dataset.ud,incub:1});e.textContent=ds>0?'Ủ còn '+mmss(ds):'Ủ xong'});
+document.querySelectorAll('[data-tk]').forEach(e=>{const d=rem41(+e.dataset.tk);e.classList.toggle('due',d<=0);e.classList.toggle('pre',d>0)});let n=0;document.querySelectorAll('[data-h41]').forEach(e=>{const d=rem41(+e.dataset.h41),o=d<=0,w=!o&&d<=15;e.classList.toggle('o41',o);e.classList.toggle('w41',w);const m=e.querySelector('[data-w41]');if(m)m.textContent=o?(d<0?`Quá giờ 41 (${-d} phút)`:'Đến giờ 41'):w?`Còn ${d} phút đến giờ 41`:'';if((o||w)&&e.closest('main'))n++});const al=$('#al41');if(al){al.textContent=n?`Cảnh báo: ${n} ca sắp tới / quá giờ 41`:'';al.style.display=n?'block':'none'}
+document.querySelectorAll('[data-tot]').forEach(e=>{const c=cases[e.dataset.tot];if(!c)return;e.textContent=totTxt(c);const x=+c.eggs||0;e.style.color=x&&tot(c)!==x?'var(--warn)':''})};
+/* ===== Cảnh báo ca mới cho người tiêm (khi ẩn/thu nhỏ cửa sổ) ===== */
+const AL={on:false,shown:new Set(),tt:document.title,wl:null,n:0};
+function alPending(){return role&&role!=='admin'?Object.values(cases).filter(c=>c.assignee===role&&!c.ack):[]}
+function alNotify(c){try{if('Notification' in window&&Notification.permission==='granted'){const n=new Notification('Ca mới: '+c.name,{body:`STT ${c.sttch||c.stt||''} · Phân bố ${distT(c)} · Vị trí ${c.pos||'–'}`,tag:'ca'+c.id,requireInteraction:true,renotify:true});n.onclick=()=>{window.focus();n.close()}}}catch(e){}}
+function alStart(){AL.on=true}
+function alStop(){if(!AL.on)return;AL.on=false;document.title=AL.tt}
+function alCheck(){const p=alPending(),ids=new Set(p.map(c=>c.id));
+p.forEach(c=>{if(!AL.shown.has(c.id)){AL.shown.add(c.id);alNotify(c)}});
+[...AL.shown].forEach(i=>{if(!ids.has(i))AL.shown.delete(i)});
+if(p.length)alStart();else alStop()}
+async function alWake(){try{if('wakeLock' in navigator&&!AL.wl&&role&&role!=='admin'){AL.wl=await navigator.wakeLock.request('screen');AL.wl.addEventListener('release',()=>{AL.wl=null})}}catch(e){}}
+function alEnable(){alWake();try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission().then(render)}catch(e){}render()}
+function alChip(){const ok='Notification' in window&&Notification.permission==='granted',no='Notification' in window&&Notification.permission==='denied';return `<button class="chip" data-a="aln" title="${no?'Trình duyệt đang chặn thông báo, hãy mở khóa trong cài đặt trang':'Bật thông báo pop-up khi có ca mới'}">${ok?'🔔 Đang bật':no?'🔕 Bị chặn':'🔔 Bật thông báo'}</button>`}
+const _r=render;render=function(){_r();alCheck()};
+setInterval(()=>{if(AL.on){AL.n++;document.title=AL.n%2?'🔔 CA MỚI – '+AL.tt:AL.tt;if(AL.n%3===0)try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)alWake()});
+setInterval(()=>{if(!document.hidden)tick()},1000);
+document.addEventListener('input',e=>{const t=e.target;if(t.classList.contains('tm')){const d=t.value.replace(/\D/g,'').slice(0,6);t.value=d.length>4?d.slice(0,2)+':'+d.slice(2,4)+':'+d.slice(4):d.length>2?d.slice(0,2)+':'+d.slice(2):d}if(t.dataset.t)tinp[t.dataset.t]=t.value;if(t.dataset.fin&&fin)fin[t.dataset.fin]=t.value});
+document.addEventListener('change',async e=>{const t=e.target;
+if(t.id==='f'&&t.files[0]){try{imp=parse(await t.files[0].arrayBuffer());imp.forEach(c=>c._s=true);if(!imp.length){alert('File không hợp lệ');imp=null}}catch(x){alert('Không đọc được file');imp=null}render()}
+if(t.dataset.i!==undefined)imp[+t.dataset.i]._s=t.checked;if(t.dataset.ps){const v=t.value;t.blur();const f=t.dataset.f||'pos';save(t.dataset.ps,v==='__x'?{[f+'x']:true,[f]:''}:{[f+'x']:false,[f]:v})}else if(t.dataset.n==='done'){const v=nt(t.value);t.blur();if(v)save(t.dataset.id,{done:v});else render()}else if(t.dataset.t){const v=nt(t.value);if(v){t.blur();resort();save(t.dataset.t,{done:v});delete tinp[t.dataset.t]}}else if(t.dataset.n)saveQ(t.dataset.id,{[t.dataset.n]:t.value})})
+document.addEventListener('click',e=>{if(thOpen&&!e.target.closest('.thp,[data-a="thm"]')){thOpen=false;render()}const b=e.target.closest('[data-a]');if(!b)return;const{a,id,v}=b.dataset;
+if(a==='role'){role=v;ls('role',v);render();if(v!=='admin')alEnable()}
+else if(a==='aln')alEnable()
+else if(a==='out'){role=null;ls('role',null);render()}
+else if(a==='tab'){tab=v;resort();render()}
+else if(a==='mode')save(id,{mode:+v})
+else if(a==='sp')save(id,{sperm:v})
+else if(a==='theme'){themeI=+v;ls('theme',v);applyTheme(themeI);render()}
+else if(a==='thm'){thOpen=!thOpen;render()}
+else if(a==='bg'){bgI=+v;ls('bg',v);applyBg(bgI);render()}
+else if(a==='savemode'){seen.delete('t'+id);resort();render()}
+else if(a==='sort'){resort();render()}
+else if(a==='now'){const c=cases[id];if(due(c)>0){early=id;render()}else{fin={id,d1:'',d2:'',pos:c.pos||'',t:hms()};render()}}
+else if(a==='eback'){early=null;render()}
+else if(a==='ego'){const c=cases[early];fin={id:early,d1:'',d2:'',pos:c.pos||'',t:hms()};early=null;render()}
+else if(a==='fcancel'){fin=null;render()}
+else if(a==='fsave'){const x=fin;fin=null;resort();save(x.id,{done:x.t,d1:x.d1,d2:x.d2,pos:x.pos})}
+else if(a==='info'){openI.has(id)?openI.delete(id):openI.add(id);render()}
+else if(a==='srt'){srt=v;ls('srt',v);render()}
+else if(a==='okprep')save(id,{ok:true})
+else if(a==='unprep')save(id,{mode:null,ok:false})
+else if(a==='confirm'){const m=Object.values(cases).filter(c=>!c.done&&!c.mode);if(m.length){warn=m.map(c=>c.id)}else resort();render()}
+else if(a==='wback'){warn=null;render()}
+else if(a==='wgo'){warn=null;resort();render()}
+else if(a==='time'){if(tinp[id]){resort();save(id,{done:tinp[id]});delete tinp[id]}}
+else if(a==='inc')save(id,{incub:v==='1'})
+else if(a==='asg'){if(cases[id]?.assignee!==v)save(id,{assignee:v,ack:false,icsiDone:null})}
+else if(a==='unasg')save(id,{assignee:null,ack:false})
+else if(a==='undo'){resort();save(id,{done:null,assignee:null,ack:false})}
+else if(a==='ack')save(id,{ack:true})
+else if(a==='idone'){const c=cases[id];if(c.incub&&incLeft(c)>0)return;save(id,{icsiDone:hm(nowM())})}
+else if(a==='all'){imp.forEach(c=>c._s=true);render()}
+else if(a==='cancel'){imp=null;render()}
+else if(a==='ok'){imp.filter(c=>c._s).forEach(c=>{delete c._s;if(!cases[c.id])save(c.id,c)});imp=null;resort();render()}
+else if(a==='clear'){if(confirm('Xóa tất cả ca?'))Object.keys(cases).forEach(del)}})
+render();
+</script></body></html>
