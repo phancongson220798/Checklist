@@ -241,16 +241,17 @@ function lsync(){const v=ls(LK)||'{}';if(v===LAST)return;LAST=v;try{cases=JSON.p
 function save(id,p){cases[id]={...cases[id],...p};render();if(col)col.doc(id).set(cases[id]).catch(()=>{});else if(RT)rtw(id,p);else lsave()}
 function saveQ(id,p){cases[id]={...cases[id],...p};if(col)col.doc(id).set(cases[id]).catch(()=>{});else if(RT)rtw(id,p);else lsave()}
 function del(id){delete cases[id];render();if(col)col.doc(id).delete().catch(()=>{});else if(RT)rtw(id);else lsave()}
-(async()=>{try{const db=window.claude&&await claude.use('db');if(!db){fallback();return}col=db.collection('cases');
-col.onSnapshot(s=>{cases={};s.docs.forEach(d=>cases[d.id]=d.data());if(!ord||!ord.length)resort();sync=true;render()},()=>{sync=false})}catch(e){fallback()}})();
+const bootDB=async()=>{try{const db=window.claude&&await claude.use('db');if(!db){fallback();return}col=db.collection('cases');
+col.onSnapshot(s=>{cases={};s.docs.forEach(d=>cases[d.id]=d.data());if(!ord||!ord.length)resort();sync=true;render()},()=>{sync=false})}catch(e){try{fallback()}catch(x){lmode()}}};
 /* ĐIỀN 2 DÒNG NÀY: địa chỉ Realtime Database và mã phòng (≥16 ký tự). Sau khi điền, mọi thiết bị tự đồng bộ. */
 const SYNC={url:'https://checklist-77869-default-rtdb.asia-southeast1.firebasedatabase.app',room:'ON7IW63tHbK74JlRARrvAbpbz3bF'};
 const SYNC_OK=()=>SYNC.url&&SYNC.room&&!/TEN-DU-AN|DAT-MA-PHONG/.test(SYNC.url+SYNC.room);var RT=null;
 const kid=id=>String(id).replace(/[.$#\[\]\/]/g,'_');
 function syncCfg(){try{const q=new URLSearchParams(location.search);if(q.get('fb')){ls('fb_url',q.get('fb'));ls('fb_room',q.get('room')||'')}}catch(e){}const url=((SYNC_OK()?SYNC.url:ls('fb_url'))||'').trim().replace(/\/+$/,''),room=((SYNC_OK()?SYNC.room:ls('fb_room'))||'').trim();return url&&room?{url,room}:null}
 function fallback(){const c=syncCfg();c?rtmode(c):lmode()}
-function cloudChip(){if(SYNC_OK()&&RT)return `<span class="chip">${sync?'☁ Đã đồng bộ':'☁ Mất kết nối'}</span>`;return `<button class="chip" data-a="cloud" title="Cấu hình đồng bộ nhiều thiết bị">${RT?(sync?'☁ Đã đồng bộ':'☁ Mất kết nối'):'☁ Đồng bộ'}</button>`}
-function rtw(id,p){const k=encodeURIComponent(kid(id)),u=`${RT}/cases/${k}.json`;try{fetch(u,cases[id]?{method:'PATCH',body:JSON.stringify({...p,id:cases[id].id||id})}:{method:'DELETE'}).catch(()=>{})}catch(e){}}
+function cloudChip(){if(RT&&RTERR)return `<button class="chip" data-a="cloudinfo" style="color:var(--warn);border-color:var(--warn)">⚠ Không ghi được</button>`;if(SYNC_OK()&&RT)return `<span class="chip">${sync?'☁ Đã đồng bộ':'☁ Mất kết nối'}</span>`;return `<button class="chip" data-a="cloud" title="Cấu hình đồng bộ nhiều thiết bị">${RT?(sync?'☁ Đã đồng bộ':'☁ Mất kết nối'):'☁ Đồng bộ'}</button>`}
+var RTERR='';
+function rtw(id,p){const k=encodeURIComponent(kid(id)),u=`${RT}/cases/${k}.json`;try{fetch(u,cases[id]?{method:'PATCH',body:JSON.stringify({...p,id:cases[id].id||id})}:{method:'DELETE'}).then(r=>{if(r.ok){if(RTERR){RTERR='';render()}}else r.text().then(t=>{RTERR=r.status+' '+t.slice(0,160);console.error('Firebase từ chối ghi:',RTERR);render()})}).catch(e=>{RTERR='Lỗi mạng: '+e.message;console.error(RTERR);render()})}catch(e){}}
 function rtmode(c){RT=`${c.url}/rooms/${encodeURIComponent(c.room)}`;let raw={};
 const build=()=>{cases={};Object.keys(raw).forEach(k=>{const o=raw[k];if(o&&typeof o==='object')cases[o.id||k]=o});if(!ord||!ord.length)resort();render()};
 const setp=(path,data)=>{const ps=path.split('/').filter(Boolean);if(!ps.length){raw=data&&typeof data==='object'?data:{};return}let o=raw;for(let i=0;i<ps.length-1;i++){if(!o[ps[i]]||typeof o[ps[i]]!=='object')o[ps[i]]={};o=o[ps[i]]}const l=ps[ps.length-1];if(data===null||data===undefined)delete o[l];else o[l]=data};
@@ -258,7 +259,7 @@ const es=new EventSource(`${RT}/cases.json`);
 es.addEventListener('open',()=>{sync=true;render()});
 es.addEventListener('put',e=>{const m=JSON.parse(e.data);setp(m.path,m.data);build()});
 es.addEventListener('patch',e=>{const m=JSON.parse(e.data),b=m.path==='/'?'':m.path;Object.keys(m.data||{}).forEach(k=>setp(b+'/'+k,m.data[k]));build()});
-es.onerror=()=>{sync=false;render()};render()}
+es.addEventListener('cancel',()=>{sync=false;RTERR='Không có quyền đọc (kiểm tra Rules)';render()});es.onerror=()=>{sync=false;render()};render()}
 function lmode(){LAST=ls(LK)||'{}';try{cases=JSON.parse(LAST)||{}}catch(e){cases={}}if(!ord||!ord.length)resort();render();window.addEventListener('storage',e=>{if(e.key===LK)lsync()});try{BC=new BroadcastChannel('icsi_sync');BC.onmessage=lsync}catch(e){}setInterval(lsync,1000)}
 
 function tm(v){if(typeof v==='number')return hm(v*1440);const m=String(v||'').match(/(\d{1,2}):(\d{2})/);return m?hm(+m[1]*60+ +m[2]):null}
@@ -350,6 +351,7 @@ if(t.dataset.i!==undefined){imp[+t.dataset.i]._s=t.checked;const e=document.quer
 document.addEventListener('click',e=>{if(thOpen&&!e.target.closest('.thp,[data-a="thm"]')){thOpen=false;render()}const b=e.target.closest('[data-a]');if(!b)return;const{a,id,v}=b.dataset;
 if(a==='role'){role=v;ls('role',v);render();if(v!=='admin')alEnable()}
 else if(a==='aln')alEnable()
+else if(a==='cloudinfo')alert('Firebase từ chối ghi dữ liệu:\n'+RTERR+'\n\nHãy kiểm tra Realtime Database > Rules đã Publish đúng chưa (xem hướng dẫn).')
 else if(a==='cloud'){const u=prompt('Địa chỉ Firebase Realtime Database (https://….firebasedatabase.app):',ls('fb_url')||'');if(u===null)return;const r=prompt('Mã phòng (chuỗi dài, bí mật, dùng chung cho mọi thiết bị):',ls('fb_room')||'');if(r===null)return;ls('fb_url',u.trim());ls('fb_room',r.trim());location.reload()}
 else if(a==='out'){role=null;ls('role',null);render()}
 else if(a==='tab'){tab=v;resort();render()}
@@ -384,5 +386,6 @@ else if(a==='all'){imp.forEach(c=>c._s=true);render()}
 else if(a==='cancel'){imp=null;render()}
 else if(a==='ok'){imp.filter(c=>c._s).forEach(c=>{delete c._s;if(!cases[c.id])save(c.id,c)});imp=null;resort();render()}
 else if(a==='clear'){if(confirm('Xóa tất cả ca?'))Object.keys(cases).forEach(del)}})
+bootDB();
 render();
 </script></body></html>
